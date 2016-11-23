@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 import sys, glob, threading, requests, os, urllib, re
 from GoogleScraper import scrape_with_config, GoogleSearchError
-from textblob import TextBlob
-from textblob.np_extractors import FastNPExtractor
 from itertools import islice
 from path import path
 from more_itertools import unique_everseen
@@ -29,7 +27,6 @@ for chapter, kwfile in zip(pipelinechapters, kwfilelist):
     # read phrases from text file
     with open(kwfile, mode='r', encoding='utf-8') as g:
         keywords = g.read().splitlines()
-    uprint("Read phrase")
     
     # launch scraping operation for phrase
     for phrase in keywords:
