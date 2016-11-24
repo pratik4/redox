@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import sys, glob, threading, requests, os, urllib, re
+import sys, glob, threading, requests, os, os.path, urllib
 from GoogleScraper import scrape_with_config, GoogleSearchError
+from textblob import TextBlob
+from textblob.np_extractors import FastNPExtractor
 from itertools import islice
-from path import path
 from more_itertools import unique_everseen
 from PIL import Image
 
@@ -17,29 +18,32 @@ def uprint(*objects, sep=' ', end='\n', file=sys.stdout):
         print(*map(f, objects), sep=sep, end=end, file=file)
 
 # read chapter folders containing plaintext phraselist        
-folderlocation = path('C:\\redox\\pipeline\\current\\*')
-kwfilelocation = path('C:\\redox\\pipeline\\current\\*\\phraselist.txt')
+folderlocation = 'C:\\redox\\pipeline\\current\\*'
 pipelinechapters = glob.glob(folderlocation)
-kwfilelist = glob.glob(kwfilelocation)
 
 # iterate through chapters
-for chapter, kwfile in zip(pipelinechapters, kwfilelist):
+for chapter in pipelinechapters:
     # read phrases from text file
+    kwfile = chapter + '\\phraselist.txt'
     with open(kwfile, mode='r', encoding='utf-8') as g:
-        keywords = g.read().splitlines()
-    
+        keywords = set(g.read().splitlines())
+    uprint("\n____________________\n\nRead all phrases for {}\n\n".format(chapter.split('\\')[-1]))
     # launch scraping operation for phrase
     for phrase in keywords:
-        
-        # overwrite soem of the scraping parameters
+        phrase = phrase.strip()
+        # overwrite some of the scraping parameters
         # more in Googlescraper.scraper_config
         config = {
-            'keyword': phrase, # :D hehe have fun my dear friends
-            'search_engines': ['yandex', 'yahoo'], # duckduckgo not supported
+            'keyword': phrase,
+            'search_engines': ['yandex'],
             'search_type': 'image',
             'scrape_method': 'selenium',
-            'sel_browser' : 'Chrome',
-            'do_caching': True}
+            'sel_browser' : 'phantomjs',
+            'do_caching': True,
+            'num_results_per_page' : 3,
+            'num_pages_for_keyword' : 1,
+            'num_workers' : 1,
+            'maximum_workers' : 1}
         
         # pass config to scraper
         try:
@@ -67,11 +71,12 @@ for chapter, kwfile in zip(pipelinechapters, kwfilelist):
                 for url in self.urls:
                     url = urllib.parse.unquote(url)
                 try:
-                    if not os.path.exists(str(chapter.strip()) +'\\images\\'+phrase.strip()):
-                        os.makedirs(str(chapter.strip()) +'\\images\\'+phrase.strip())
+                    if not os.path.exists(str(chapter.strip()) +'\\images\\'+ str(phrase.strip())):
+                        os.makedirs(str(chapter.strip()) +'\\images\\'+str(phrase.strip()))
                 except FileExistsError:
                     pass
                 name = url.split('/')[-1]
+                name = ''.join([i if (ord(i) < 128 and ord(i) > 31 and ord(i) != 42) else ' ' for i in name])
                 with open(os.path.join(self.target, name.split('?',1)[0]), 'wb') as f:
                     try:
                         content = requests.get(url).content
@@ -81,8 +86,8 @@ for chapter, kwfile in zip(pipelinechapters, kwfilelist):
      
         # create 500 threads to get the images
         # each fetch image content from a url
-        num_threads = 500
-        chapterimages = str(chapter + '\\images\\' + phrase + '\\')
+        num_threads = 200
+        chapterimages = str(chapter.strip()) +'\\images\\'+str(phrase.strip())
         threads = [FetchResource(chapterimages, []) for k in range(num_threads)]
         while image_urls:
             for t in threads:
@@ -97,16 +102,14 @@ for chapter, kwfile in zip(pipelinechapters, kwfilelist):
         for t in threads:
             t.join()
             b += 1
-        uprint('[+] downloaded {} images for {}\n...\n'.format(b, phrase))
+        uprint('downloaded {} images for {}'.format(b, phrase))
 
     # remove all images smaller than required
-    for phrase in keywords:
-        chapterimages = str(chapter + '\\images\\' + phrase + '\\')
-        for filename in os.listdir(chapterimages):
-            filepath = os.path.join(chapterimages, filename)
-            with Image.open(filepath) as im:
-                x, y = im.size
-            totalsize = x*y
-            if totalsize < 240000:
-                os.remove(filepath)
-        uprint("small images removed for {}".format(phrase))
+    print("Downloaded all images for {}\n____________________\n".format(chapter.split('\\')[-1]))
+    fileiter = (os.path.join(root, f)
+        for root, _, files in os.walk(str(chapter.strip()) +'\\images\\'+str(phrase.strip()))
+        for f in files)
+    smallfileiter = (f for f in fileiter if os.path.getsize(f) < 300 * 800)
+    for small in smallfileiter:
+        os.remove(small)
+    print("\nRemoved small images from {}\n____________________\n".format(chapter.split('\\')[-1]))
