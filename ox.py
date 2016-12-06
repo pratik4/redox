@@ -18,9 +18,11 @@ def get_immediate_subdirectories(a_dir):
                     a_dir, name))]
 
 
-drive = "C:\\Users\\nnikh\\Google Drive" 
-author = os.path.join(drive,"nikhilatphyzok")
-projectpath = os.path.join(author,"automation", "scraping")
+drive = "C:\\Users\\nnikh\\Google Drive"
+author = os.path.join(
+    drive, "nikhilatphyzok")
+projectpath = os.path.join(
+    author, "automation", "scraping")
 procpathS = get_immediate_subdirectories(projectpath)
 
 
@@ -45,7 +47,10 @@ def chapterscraper(aprocpath):
     with open(
         kwfile, mode='r', encoding='utf-8') as g:
         chapterphrases = list(
-            set(g.read().splitlines()))
+            set(
+                g.read()
+                .splitlines()
+                ))
     uprint("Read all phrases for {}\n\n".
            format(aprocpath))
 
@@ -98,19 +103,19 @@ def phrasescraper(aphrase, aprocpath):
         phraseimages, []) for i in range(
             num_threads)]
     while image_urls:
-        for t in threads:
+        for thread in threads:
             try:
-                t.furls.append(
+                thread.furls.append(
                     image_urls.pop())
             except IndexError:
                 break
 
-    threads = [t for t in threads if t.furls]
+    threads = [thread for thread in threads if threads.furls]
     b = 0
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join()
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
         b += 1
     uprint('downloaded {} images for {}'.format(b, aphrase))
 
