@@ -18,9 +18,10 @@ def get_immediate_subdirectories(a_dir):
                     a_dir, name))]
 
 
-projectpath = "C:\\Users\\nnikh\\Google Drive\\nikhilatphyzok\\automation\\scraping"
-procpathS = get_immediate_subdirectories(
-    projectpath)
+drive = "C:\\Users\\nnikh\\Google Drive" 
+author = os.path.join(drive,"nikhilatphyzok")
+projectpath = os.path.join(author,"scraping")
+procpathS = get_immediate_subdirectories(projectpath)
 
 
 def uprint(*objects, sep=' ', end='\n', file=sys.stdout):
@@ -29,27 +30,31 @@ def uprint(*objects, sep=' ', end='\n', file=sys.stdout):
     if enc == 'UTF-8':
         print(*objects, sep=sep, end=end, file=file)
     else:
-        fup = lambda obj: str(obj).encode(enc, errors='replace').decode(enc)
-        print(*map(fup, objects), sep=sep, end=end, file=file)
+        fup = lambda obj: str(obj).encode(
+            enc, errors='replace').decode(enc)
+        print(
+            *map(fup, objects), sep=sep, end=end, file=file)
 
 
 def chapterscraper(aprocpath):
-    """ Reads the contents of a chapter and calls phrase operations"""
+    """ Reads the contents of a chapter
+    and calls phrase operations"""
 
     kwfile = os.path.join(
         projectpath, aprocpath, 'phraselist.txt')
-    with open(kwfile, mode='r', encoding='utf-8') as g:
+    with open(
+        kwfile, mode='r', encoding='utf-8') as g:
         chapterphrases = list(
             set(g.read().splitlines()))
-    uprint(
-        "Read all phrases for {}\n\n".format(aprocpath))
+    uprint("Read all phrases for {}\n\n".
+           format(aprocpath))
 
     for phrase in chapterphrases:
         phrase = phrase.strip()
     phraseprocs = [multiprocessing.Process(
         target=phrasescraper(
-            phrase, aprocpath)) for phrase in chapterphrases]
-
+            phrase, aprocpath))
+                   for phrase in chapterphrases]
 
     if __name__ == '__main__':
         for phraseproc in phraseprocs:
@@ -58,12 +63,13 @@ def chapterscraper(aprocpath):
             uprint("Running phrase operations")
         for phraseproc in phraseprocs:
             phraseproc.join()
-        uprint(
-            'Phrase operations for {}'.format(aprocpath.split('\\')[-1]))
+        uprint('Phrase operations for {}'
+               .format(aprocpath.split('\\')[-1]))
 
 
 def phrasescraper(aphrase, aprocpath):
-    """ Gets images for a phrase and writes to the phrase folder """
+    """ Gets images for a phrase
+    and writes to the phrase folder """
     config = {
         'keyword': aphrase,
         'database_name' : 'redox',
@@ -75,33 +81,29 @@ def phrasescraper(aphrase, aprocpath):
         'maximum_workers' : 2
         }
 
-
     try:
         search = scrape_with_config(config)
     except GoogleSearchError as e:
         uprint(e)
-
 
     image_urls = []
     for serp in search.serps:
         image_urls.extend(
             [link.link for link in serp.links])
 
-
     num_threads = 30
     phraseimages = os.path.join(
         projectpath, aprocpath, 'images', aphrase)
     threads = [FetchResource(
-        phraseimages, []) for i in range(num_threads)]
+        phraseimages, []) for i in range(
+            num_threads)]
     while image_urls:
         for t in threads:
             try:
                 t.furls.append(
                     image_urls.pop())
-                ## add check for an empty image_urls if serp has no links
             except IndexError:
                 break
-
 
     threads = [t for t in threads if t.furls]
     b = 0
@@ -112,54 +114,54 @@ def phrasescraper(aphrase, aprocpath):
         b += 1
     uprint('downloaded {} images for {}'.format(b, aphrase))
 
-
     fileiter = (os.path.join(
         root, f) for root, _, files in os.walk(
-            aprocpath +'\\images\\' + aphrase) for f in files)
+            aprocpath +'\\images\\' + aphrase)
+                for f in files)
     smallfileiter = (f for f in fileiter
                      if os.path.getsize(f) < 300 * 800)
     for small in smallfileiter:
         os.remove(small)
-        print("\nRemoved small images from {}".format(aphrase))
+        print("\nRemoved small images from {}"
+              .format(aphrase))
 
 
 class FetchResource(threading.Thread):
     """ Gets the content of a url """
-
 
     def __init__(self, target, furls):
         super().__init__()
         self.target = target
         self.furls = furls
 
-
     def run(self):
-        if not os.path.exists(self.target.strip()):
-            os.makedirs(self.target.strip())
+        if not os.path.exists(
+                self.target.strip()):
+            os.makedirs(
+                self.target.strip())
         for furl in self.furls:
             furl = urllib.parse.unquote(furl)
             name = furl.split('/')[-1]
-            with open(os.path.join(
-                self.target, name), 'wb') as fname:
+            with open(
+                os.path.join(
+                    self.target, name), 'wb') as fname:
                 content = requests.get(furl).content
                 fname.write(content)
 
 
 def main():
-    """ Reads target folder and calls chapter operations """
+    """ Reads target folder
+    and calls chapter operations """
     chapterprocs = [multiprocessing.Process(
         target=chapterscraper(
-            procpath)) for procpath in procpathS]
+            procpath))
+                    for procpath in procpathS]
     if __name__ == '__main__':
         for chapterproc in chapterprocs:
             chapterproc.start()
-            uprint(
-                "Started processing chapters in parallel")
         for chapterproc in chapterprocs:
             chapterproc.join()
-    uprint(
-        "Finished processing everything")
+    uprint("Finished processing everything")
 
 
 if __name__ == '__main__':
-    main()
