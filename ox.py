@@ -9,30 +9,12 @@ import multiprocessing
 import requests
 from more_itertools import unique_everseen
 from GoogleScraper import scrape_with_config, GoogleSearchError
-
+######################################
+######################################
 def get_immediate_subdirectories(a_dir):
     """ Get only the immediate subfolders """
     return [name for name in os.listdir(a_dir)
             if os.path.isdir(os.path.join(a_dir, name))]
-
-projectpath = "C:\\Users\\nnikh\\Google Drive\\WORK\\automation\\3. Ready for image downloading"
-procpathS = get_immediate_subdirectories(projectpath)
-
-def chapterscraper(aprocpath):
-    """ Reads the contents of a chapter and calls phrase operations"""
-    kwfile = os.path.join(projectpath, aprocpath, 'phraselist.txt')
-    with open(kwfile, mode='r', encoding='utf-8') as g:
-        chapterphrases = unique_everseen(g.read().splitlines())
-    uprint("\n____________________\n\nRead all phrases for {}\n\n".format(aprocpath))
-    for phrase in chapterphrases:
-        phrase = phrase.strip()
-    phraseprocs = [multiprocessing.Process(target=phrasescraper(phrase, aprocpath))
-                   for phrase in chapterphrases]
-    if __name__ == '__main__':
-        for phraseproc in phraseprocs:
-            phraseproc.start()
-        uprint('started image download for {}'.format(aprocpath.split('\\')[-1]))
-    uprint('started image download for {}'.format(aprocpath.split('\\')[-1]))
 
 def uprint(*objects, sep=' ', end='\n', file=sys.stdout):
     """This is just a print wrapper"""
@@ -44,13 +26,31 @@ def uprint(*objects, sep=' ', end='\n', file=sys.stdout):
         print(*map(fup, objects), sep=sep, end=end, file=file)
 
 
+######################################
+######################################
+def chapterscraper(aprocpath):
+    """ Reads the contents of a chapter and calls phrase operations"""
+    kwfile = os.path.join(projectpath, aprocpath, 'phraselist.txt')
+    with open(kwfile, mode='r', encoding='utf-8') as g:
+        chapterphrases = list(set(g.read().splitlines()))
+    uprint("\n____________________\n\nRead all phrases for {}\n\n".format(aprocpath))
+    for phrase in chapterphrases:
+        phrase = phrase.strip()
+    phraseprocs = [multiprocessing.Process(target=phrasescraper(phrase, aprocpath)) for phrase in chapterphrases]
+    for phraseproc in phraseprocs:
+        phraseproc.daemon = False
+        phraseproc.start()
+        uprint("Running phrase operations")
+    for phraseproc in phraseprocs:
+        phraseproc.join()
+    uprint('Started phrase operations for {}'.format(aprocpath.split('\\')[-1]))
 
 def phrasescraper(aphrase, aprocpath):
     config = {
         'keyword': aphrase,
         'database_name' : 'redox',
         'print_results' : 'summarize',
-        'log_level' : 'WARN',
+        'log_level' : 'INFO',
         'num_results_per_page' : 30,
         'num_pages_for_keyword' : 1,
         'num_workers' : 1,
@@ -100,14 +100,21 @@ class FetchResource(threading.Thread):
         for furl in self.furls:
             furl = urllib.parse.unquote(furl)
             name = furl.split('/')[-1]
+            ## add something to remove weird characters
             with open(os.path.join(self.target, name), 'wb') as fname:
                 content = requests.get(furl).content
                 fname.write(content)
-
+######################################
+######################################
+projectpath = "C:\\Users\\nnikh\\Google Drive\\nikhilatphyzok\\automation\\scraping"
+procpathS = get_immediate_subdirectories(projectpath)
 for procpath in procpathS:
     chapterprocs = [multiprocessing.Process(target=chapterscraper(procpath))
                     for procpath in procpathS]
     if __name__ == '__main__':
         for chapterproc in chapterprocs:
             chapterproc.start()
-    uprint('started image download for {}'.format(procpath.split('\\')[-1]))
+            uprint("Started processing chapters in parallel")
+        for chapterproc in chapterprocs:
+            chapterproc.join()
+uprint("Finished processing everything")
