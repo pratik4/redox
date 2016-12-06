@@ -36,13 +36,14 @@ def chapterscraper(aprocpath):
     for phrase in chapterphrases:
         phrase = phrase.strip()
     phraseprocs = [multiprocessing.Process(target=phrasescraper(phrase, aprocpath)) for phrase in chapterphrases]
-    for phraseproc in phraseprocs:
-        phraseproc.daemon = False
-        phraseproc.start()
-        uprint("Running phrase operations")
-    for phraseproc in phraseprocs:
-        phraseproc.join()
-    uprint('Started phrase operations for {}'.format(aprocpath.split('\\')[-1]))
+    if __name__ == '__main__':
+        for phraseproc in phraseprocs:
+            phraseproc.daemon = False
+            phraseproc.start()
+            uprint("Running phrase operations")
+        for phraseproc in phraseprocs:
+            phraseproc.join()
+        uprint('Started phrase operations for {}'.format(aprocpath.split('\\')[-1]))
 
 
 def phrasescraper(aphrase, aprocpath):
@@ -75,6 +76,7 @@ def phrasescraper(aphrase, aprocpath):
         for t in threads:
             try:
                 t.furls.append(image_urls.pop())
+                ## add check for an empty image_urls if serp has no links
             except IndexError:
                 break
     
