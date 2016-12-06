@@ -20,7 +20,7 @@ def get_immediate_subdirectories(a_dir):
 
 drive = "C:\\Users\\nnikh\\Google Drive" 
 author = os.path.join(drive,"nikhilatphyzok")
-projectpath = os.path.join(author,"scraping")
+projectpath = os.path.join(author,"automation", "scraping")
 procpathS = get_immediate_subdirectories(projectpath)
 
 
