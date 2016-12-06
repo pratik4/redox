@@ -10,16 +10,16 @@ import requests
 from GoogleScraper import scrape_with_config, GoogleSearchError
 
 
-projectpath = "C:\\Users\\nnikh\\Google Drive\\nikhilatphyzok\\automation\\scraping"
-procpathS = get_immediate_subdirectories(projectpath)
-
-
 def get_immediate_subdirectories(a_dir):
     """ Get only the immediate subfolders """
     return [name for name in os.listdir(a_dir)
             if os.path.isdir(
                 os.path.join(
                     a_dir, name))]
+
+
+projectpath = "C:\\Users\\nnikh\\Google Drive\\nikhilatphyzok\\automation\\scraping"
+procpathS = get_immediate_subdirectories(projectpath)
 
 
 def uprint(*objects, sep=' ', end='\n', file=sys.stdout):
