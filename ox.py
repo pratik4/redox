@@ -19,7 +19,8 @@ def get_immediate_subdirectories(a_dir):
 
 
 projectpath = "C:\\Users\\nnikh\\Google Drive\\nikhilatphyzok\\automation\\scraping"
-procpathS = get_immediate_subdirectories(projectpath)
+procpathS = get_immediate_subdirectories(
+    projectpath)
 
 
 def uprint(*objects, sep=' ', end='\n', file=sys.stdout):
@@ -35,17 +36,19 @@ def uprint(*objects, sep=' ', end='\n', file=sys.stdout):
 def chapterscraper(aprocpath):
     """ Reads the contents of a chapter and calls phrase operations"""
 
-    kwfile = os.path.join(projectpath, aprocpath, 'phraselist.txt')
+    kwfile = os.path.join(
+        projectpath, aprocpath, 'phraselist.txt')
     with open(kwfile, mode='r', encoding='utf-8') as g:
         chapterphrases = list(
             set(g.read().splitlines()))
+    uprint(
+        "Read all phrases for {}\n\n".format(aprocpath))
 
-
-    uprint("\n____________________\n\nRead all phrases for {}\n\n".format(aprocpath))
     for phrase in chapterphrases:
         phrase = phrase.strip()
-    phraseprocs = [multiprocessing.Process(target=phrasescraper(
-        phrase, aprocpath)) for phrase in chapterphrases]
+    phraseprocs = [multiprocessing.Process(
+        target=phrasescraper(
+            phrase, aprocpath)) for phrase in chapterphrases]
 
 
     if __name__ == '__main__':
@@ -55,11 +58,12 @@ def chapterscraper(aprocpath):
             uprint("Running phrase operations")
         for phraseproc in phraseprocs:
             phraseproc.join()
-        uprint('Started phrase operations for {}'.format(aprocpath.split('\\')[-1]))
+        uprint(
+            'Phrase operations for {}'.format(aprocpath.split('\\')[-1]))
 
 
 def phrasescraper(aphrase, aprocpath):
-    """ Gets images for a phrase and writes them to the phrase folder """
+    """ Gets images for a phrase and writes to the phrase folder """
     config = {
         'keyword': aphrase,
         'database_name' : 'redox',
@@ -87,11 +91,13 @@ def phrasescraper(aphrase, aprocpath):
     num_threads = 30
     phraseimages = os.path.join(
         projectpath, aprocpath, 'images', aphrase)
-    threads = [FetchResource(phraseimages, []) for i in range(num_threads)]
+    threads = [FetchResource(
+        phraseimages, []) for i in range(num_threads)]
     while image_urls:
         for t in threads:
             try:
-                t.furls.append(image_urls.pop())
+                t.furls.append(
+                    image_urls.pop())
                 ## add check for an empty image_urls if serp has no links
             except IndexError:
                 break
@@ -107,12 +113,14 @@ def phrasescraper(aphrase, aprocpath):
     uprint('downloaded {} images for {}'.format(b, aphrase))
 
 
-    fileiter = (os.path.join(root, f) for root, _, files in os.walk(
-        aprocpath +'\\images\\' + aphrase) for f in files)
-    smallfileiter = (f for f in fileiter if os.path.getsize(f) < 300 * 800)
+    fileiter = (os.path.join(
+        root, f) for root, _, files in os.walk(
+            aprocpath +'\\images\\' + aphrase) for f in files)
+    smallfileiter = (f for f in fileiter
+                     if os.path.getsize(f) < 300 * 800)
     for small in smallfileiter:
         os.remove(small)
-        print("\nRemoved small images from {}\n____________________\n".format(aphrase))
+        print("\nRemoved small images from {}".format(aphrase))
 
 
 class FetchResource(threading.Thread):
@@ -131,7 +139,8 @@ class FetchResource(threading.Thread):
         for furl in self.furls:
             furl = urllib.parse.unquote(furl)
             name = furl.split('/')[-1]
-            with open(os.path.join(self.target, name), 'wb') as fname:
+            with open(os.path.join(
+                self.target, name), 'wb') as fname:
                 content = requests.get(furl).content
                 fname.write(content)
 
@@ -139,14 +148,17 @@ class FetchResource(threading.Thread):
 def main():
     """ Reads target folder and calls chapter operations """
     chapterprocs = [multiprocessing.Process(
-        target=chapterscraper(procpath)) for procpath in procpathS]
+        target=chapterscraper(
+            procpath)) for procpath in procpathS]
     if __name__ == '__main__':
         for chapterproc in chapterprocs:
             chapterproc.start()
-            uprint("Started processing chapters in parallel")
+            uprint(
+                "Started processing chapters in parallel")
         for chapterproc in chapterprocs:
             chapterproc.join()
-    uprint("Finished processing everything")
+    uprint(
+        "Finished processing everything")
 
 
 if __name__ == '__main__':
