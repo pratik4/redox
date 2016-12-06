@@ -9,12 +9,13 @@ import multiprocessing
 import requests
 from more_itertools import unique_everseen
 from GoogleScraper import scrape_with_config, GoogleSearchError
-######################################
-######################################
+
+
 def get_immediate_subdirectories(a_dir):
     """ Get only the immediate subfolders """
     return [name for name in os.listdir(a_dir)
             if os.path.isdir(os.path.join(a_dir, name))]
+
 
 def uprint(*objects, sep=' ', end='\n', file=sys.stdout):
     """This is just a print wrapper"""
@@ -26,8 +27,6 @@ def uprint(*objects, sep=' ', end='\n', file=sys.stdout):
         print(*map(fup, objects), sep=sep, end=end, file=file)
 
 
-######################################
-######################################
 def chapterscraper(aprocpath):
     """ Reads the contents of a chapter and calls phrase operations"""
     kwfile = os.path.join(projectpath, aprocpath, 'phraselist.txt')
@@ -45,7 +44,9 @@ def chapterscraper(aprocpath):
         phraseproc.join()
     uprint('Started phrase operations for {}'.format(aprocpath.split('\\')[-1]))
 
+
 def phrasescraper(aphrase, aprocpath):
+    
     config = {
         'keyword': aphrase,
         'database_name' : 'redox',
@@ -56,14 +57,17 @@ def phrasescraper(aphrase, aprocpath):
         'num_workers' : 1,
         'maximum_workers' : 2
         }
+    
     try:
         search = scrape_with_config(config)
     except GoogleSearchError as e:
         uprint(e)
+    
     image_urls = []
     for serp in search.serps:
         image_urls.extend(
             [link.link for link in serp.links])
+    
     num_threads = 30
     phraseimages = os.path.join(projectpath, aprocpath, 'images', aphrase)
     threads = [FetchResource(phraseimages, []) for i in range(num_threads)]
@@ -73,6 +77,7 @@ def phrasescraper(aphrase, aprocpath):
                 t.furls.append(image_urls.pop())
             except IndexError:
                 break
+    
     threads = [t for t in threads if t.furls]
     b = 0
     for t in threads:
@@ -88,12 +93,18 @@ def phrasescraper(aphrase, aprocpath):
         os.remove(small)
         print("\nRemoved small images from {}\n____________________\n".format(aphrase))
 
+
+
 class FetchResource(threading.Thread):
     """ Gets the content of a url """
+    
+    
     def __init__(self, target, furls):
         super().__init__()
         self.target = target
         self.furls = furls
+    
+    
     def run(self):
         if not os.path.exists(self.target.strip()):
             os.makedirs(self.target.strip())
@@ -104,8 +115,8 @@ class FetchResource(threading.Thread):
             with open(os.path.join(self.target, name), 'wb') as fname:
                 content = requests.get(furl).content
                 fname.write(content)
-######################################
-######################################
+
+
 projectpath = "C:\\Users\\nnikh\\Google Drive\\nikhilatphyzok\\automation\\scraping"
 procpathS = get_immediate_subdirectories(projectpath)
 for procpath in procpathS:
